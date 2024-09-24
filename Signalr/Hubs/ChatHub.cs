@@ -31,6 +31,7 @@ namespace SignlR.Hubs
                     UserConnections[user.Id] = new List<string>();
                 }
 
+                // Add the new connection ID to the list
                 UserConnections[user.Id].Add(connectionId);
             }
 

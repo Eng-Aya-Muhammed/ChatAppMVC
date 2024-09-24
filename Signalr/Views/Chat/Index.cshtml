@@ -1,0 +1,46 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 600px;
+            margin-top: 50px;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        .btn-primary {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Welcome to Your Chat App</h1>
+        <p>Connect with friends and chat in real time!</p>
+        <a asp-controller="chat" asp-action="group" class="btn btn-primary btn-lg">Get Started</a>
+        <hr>
+        <h3>Features</h3>
+        <ul class="list-unstyled">
+            <li>✔ One-to-One Chat</li>
+            <li>✔ Group Chats</li>
+            <li>✔ Real-Time Notifications</li>
+        </ul>
+        <a asp-controller="account" asp-action="register" class="btn btn-secondary">Sign Up</a>
+    </div>
+
+</body>
+</html>
+

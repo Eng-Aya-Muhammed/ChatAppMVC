@@ -1,0 +1,122 @@
+﻿@{
+    ViewData["Title"] = "Chat";
+}
+
+<section style="background-color: #eee; height: 100vh;">
+    <div class="container h-100 py-5 d-flex align-items-center">
+
+        <div class="row w-100 d-flex justify-content-center ">
+            <div class="col-md-6 text-center">
+                <div class="card" id="chat1" style="border-radius: 15px;">
+                    <div class="card-header d-flex justify-content-between align-items-center p-3 bg-info text-white border-bottom-0"
+                         style="border-top-left-radius: 15px; border-top-right-radius: 15px;">
+                        <i class="fas fa-angle-left"></i>
+                        <p class="mb-0 fw-bold">Live chat</p>
+                        <i class="fas fa-times"></i>
+                    </div>
+                    <div class="card-body" id="chatBox"></div>
+                    <label id="lbl"></label>
+
+                    <!-- New input for receiver's email -->
+                    <div class="form-outline mb-3">
+                        <input type="email" id="receiverEmail" class="form-control" placeholder="Receiver's email" />
+                    </div>
+
+                    <div data-mdb-input-init class="form-outline mb-3">
+                        <textarea onfocus="typing()" onblur="nottyping()" id="txt" class="form-control" rows="4" placeholder="Type your message"></textarea>
+                    </div>
+                    <button onclick="send()" type="button" class="btn btn-success btn-rounded">Send</button>
+                </div>
+                <ul id="list" class="list-unstyled"></ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="~/microsoft/signalr/dist/browser/signalr.js"></script>
+
+<script>
+    const checkSign = "&#10004";
+    let name = prompt("Enter your name") || "Anonymous";  // Default name if prompt is cancelled
+    let receiverEmail = '';
+
+    const con = new signalR.HubConnectionBuilder().withUrl("/chat").build();
+
+    con.start().then(function () {
+        console.log("Connected to SignalR hub");
+    }).catch(function (err) {
+        console.error(err.toString());
+    });
+
+    con.on("MessageReceived", function (sender, message, loggedInUserEmail) {
+        if (message.trim().length === 0) {
+            return;
+        }
+
+        const isSender = sender === name;
+        const msgClass = isSender ? "justify-content-end" : "justify-content-start";
+        const avatar = isSender ? "ava1-bg.webp" : "ava2-bg.webp";
+
+        $("#chatBox").append(`
+                <div class="d-flex flex-row ${msgClass} mb-4">
+                    ${isSender ? '' : `<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/${avatar}" alt="avatar" style="width: 45px; height: 100%;">`}
+                    <div class="p-3 ${isSender ? 'me-3' : 'ms-3'} border msg" style="border-radius: 15px; background-color: ${isSender ? '#fbfbfb' : 'rgba(57, 192, 237,.2)'};">
+                                <p class="small mb-0"><strong>${loggedInUserEmail}:</strong> ${message}</p>
+                        ${isSender ? `<span class="check-sign unchecked">${checkSign}</span>` : ''}
+                    </div>
+                    ${isSender ? `<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/${avatar}" alt="avatar" style="width: 45px; height: 100%;">` : ''}
+                </div>
+            `);
+    });
+
+    con.on("typingnotification", function (notification) {
+        $("#lbl").html(notification);
+        $(".unchecked").each(function () {
+            $(this).html(`${checkSign}${checkSign}`);
+            $(this).removeClass("unchecked");
+        });
+    });
+
+    function send() {
+        if (!receiverEmail) {
+            receiverEmail = $("#receiverEmail").val().trim();
+        }
+
+        if (!receiverEmail) {
+            alert("Please enter a valid receiver's email.");
+            return;
+        }
+
+        var message = $("#txt").val();
+
+        if (message.trim().length === 0) {
+            return;
+        }
+
+        con.invoke("sendmessagetoreceiver", name, receiverEmail, message)
+            .then(() => {
+                console.log("Message sent successfully.");
+                $("#txt").val("");
+            })
+            .catch(error => {
+                console.error("Error sending message:", error);
+            });
+    }
+
+    function typing() {
+    if (!receiverEmail) {
+        receiverEmail = $("#receiverEmail").val().trim();
+    }
+    if (receiverEmail) {
+        // Use the logged-in user's email instead of the name
+        const loggedInUserEmail = name; // assuming 'name' is set to the logged-in user's email
+        con.invoke("personistypingnotification", loggedInUserEmail);
+    }
+}
+
+
+    function nottyping() {
+        con.invoke("personstoppedtypingnotification", name);
+    }
+</script>

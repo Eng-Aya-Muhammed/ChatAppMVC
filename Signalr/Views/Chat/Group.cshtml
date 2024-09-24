@@ -1,0 +1,148 @@
+﻿@{
+    ViewData["Title"] = "Chat";
+    Layout = "_Layout";
+}
+@*
+
+
+</ul> *@
+<section style="background-color: #eee; height: 100vh;">
+    <div class="container h-100 py-5 d-flex align-items-center">
+
+        <div class="row w-100 d-flex justify-content-center ">
+            <div class="col-md-6 text-center">
+
+                <div class="card" id="chat1" style="border-radius: 15px;">
+                    <div class="card-header d-flex justify-content-between align-items-center p-3 bg-info text-white border-bottom-0"
+                         style="border-top-left-radius: 15px; border-top-right-radius: 15px;">
+                        <i class="fas fa-angle-left"></i>
+                        <p class="mb-0 fw-bold">Live chat</p>
+                        <i class="fas fa-times"></i>
+                    </div>
+                    <div class="card-body" id="chatBox">
+                    </div>
+                    <label id="lbl"></label>
+                    <div data-mdb-input-init class="form-outline mb-3">
+                        <textarea onfocus="typing()" onblur="nottyping()" id="txt" class="form-control" id="textAreaExample" rows="4"></textarea>
+                        <label class="form-label" for="textAreaExample">Type your message</label>
+                        <button onclick="send()" type="button" class="btn btn-success btn-rounded">
+                            Send
+                        </button>
+                    </div>
+
+
+                </div>
+                <div class="d-flex  adding-group-container">
+                    <input id="gtxt" class="form-control flex-grow-1 me-2" id="textAreaGroup" placeholder="group name..." />
+                    <button onclick="join()" type="button" class="btn btn-xs btn-info btn-rounded">
+                        Join Group
+                    </button>
+                </div>
+                <div class="d-flex  align-items-center mb-3">
+    <select id="select-grps" class="form-select py-1 flex-grow-1 me-2">
+    </select>
+   
+</div>
+
+
+
+
+
+                
+            </div>
+        </div>
+<ul id="list" class="list-unstyled"></ul>
+    </div>
+</section>
+@section Scripts {
+    <script src="~/microsoft/signalr/dist/browser/signalr.js"></script>
+    <script>
+        const name = prompt("Enter your name");
+        const checkSign = "&#10004";
+
+        const con = new signalR.HubConnectionBuilder().withUrl("/chat").build();
+
+        con.start().catch(err => console.error(err));
+
+        con.on("newmessage", function (msg) {
+            const messageDiv = `
+                        <div class="d-flex flex-row ${msg.username === name ? 'justify-content-end' : 'justify-content-start'} mb-4">
+                            ${msg.username === name ? `
+                                <div class="p-3 me-3 border msg" style="border-radius: 15px; background-color: #fbfbfb;">
+                                    <p class="small mb-0">${msg.messagetxt}</p>
+                                    <span class="check-sign unchecked">${checkSign}</span>
+                                </div>
+                            ` : `
+                                <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava2-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">
+                                <div class="p-3 ms-3" style="border-radius: 15px; background-color: rgba(57, 192, 237,.2);">
+                                    <p class="small mb-0">${msg.messagetxt}</p>
+                                </div>
+                            `}
+                        </div>`;
+            $("#chatBox").append(messageDiv);
+        });
+
+        con.on("newmember", function (nm, grpname) {
+            $("#list").append(`<li><em>${nm} joined ${grpname}</em></li>`);
+        });
+
+        con.on("groupmessage", function (nm, msg, grp) {
+            const messageDiv = `
+                        <div class="d-flex flex-row ${nm === name ? 'justify-content-end' : 'justify-content-start'} mb-4">
+                            ${nm === name ? `
+                                <div class="p-3 me-3 border msg" style="border-radius: 15px; background-color: #fbfbfb;">
+                                    <p class="small px-1">${msg}</p>
+                                    <p class="grp-txt">${grp}</p>
+                                </div>
+                            ` : `
+                                <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava2-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">
+                                <div class="p-3 ms-3" style="border-radius: 15px; background-color: rgba(57, 192, 237,.2);">
+                                    <p class="small px-1">${msg}</p>
+                                    <p class="grp-txt">${grp}</p>
+                                </div>
+                            `}
+                        </div>`;
+            $("#chatBox").append(messageDiv);
+        });
+
+        con.on("typingnotification", function (notification) {
+            $("#lbl").html(notification);
+            $(".unchecked").each(function () {
+                $(this).html(`${checkSign}${checkSign}`);
+                $(this).removeClass("unchecked");
+            });
+        });
+
+        function send() {
+            const obj = {
+                username: name,
+                messagetxt: $("#txt").val()
+            };
+
+            con.invoke("sendmessage", obj).catch(err => console.error(err));
+            $("#txt").val("");
+        }
+
+        function join() {
+            const groupname = $("#gtxt").val();
+            con.invoke("joingroup", groupname, name).catch(err => console.error(err));
+            $("#select-grps").append(`<option value="${groupname}"> group: ${groupname}</option>`);
+            $("#gtxt").val(""); // Clear input after joining
+        }
+
+        function sendtogroup() {
+            const selectedGroup = $("#select-grps").val();
+            const message = $("#txt").val();
+            con.invoke("sendToGroup", name, message, selectedGroup).catch(err => console.error(err));
+            $("#txt").val("");
+        }
+
+        function typing() {
+            con.invoke("personistypingnotification", name).catch(err => console.error(err));
+        }
+
+        function nottyping() {
+            con.invoke("personstoppedtypingnotification").catch(err => console.error(err));
+        }
+    </script>
+}
